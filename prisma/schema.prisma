@@ -1,0 +1,59 @@
+// schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  email       String       @unique
+  name        String
+  enrollments Enrollment[]
+  progress    Progress[]
+}
+
+model Course {
+  id          Int          @id @default(autoincrement())
+  title       String
+  price       Float        // e.g., 100.00
+  videos      Video[]
+  enrollments Enrollment[]
+}
+
+model Video {
+  id          Int        @id @default(autoincrement())
+  courseId    Int
+  title       String
+  videoUrl    String     // BunnyCDN or Cloudflare video ID
+  duration    Int        // Length in seconds
+  course      Course     @relation(fields: [courseId], references: [id])
+  progress    Progress[]
+}
+
+model Enrollment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  courseId  Int
+  enrolledAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId]) // Prevent double enrollment
+}
+
+model Progress {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  videoId     Int
+  watchedSecs Int      @default(0)
+  isCompleted Boolean  @default(false)
+  lastWatched DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+  video       Video    @relation(fields: [videoId], references: [id])
+
+  @@unique([userId, videoId])
+}
